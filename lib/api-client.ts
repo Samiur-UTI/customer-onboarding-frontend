@@ -1,8 +1,8 @@
-import axios, { type AxiosInstance } from "axios"
-import { getCookie } from "cookies-next"
+import axios, { type AxiosInstance, type AxiosError } from "axios"
+import { getCookie, deleteCookie } from "cookies-next"
 
 // API base URL
-const API_URL = process.env.NEXT_PUBLIC_API_URL
+const API_URL = "http://34.174.59.17:5000"
 
 export interface Customer {
   id: string | number
@@ -20,8 +20,7 @@ export interface User {
 }
 
 export interface LoginResponse {
-  token: string
-  user: User
+  access_token: string
 }
 
 export interface SignupData {
@@ -30,8 +29,15 @@ export interface SignupData {
   password: string
 }
 
+export interface ApiError {
+  message: string
+  error?: string
+  statusCode?: number
+}
+
 class ApiClient {
   private client: AxiosInstance
+  private static instance: ApiClient
 
   constructor() {
     this.client = axios.create({
@@ -50,30 +56,52 @@ class ApiClient {
     // Add response interceptor for error handling
     this.client.interceptors.response.use(
       (response) => response,
-      (error) => {
+      (error: AxiosError<ApiError>) => {
         if (error.response?.status === 401) {
-          // Redirect to login page if unauthorized
-          if (typeof window !== "undefined") {
-            window.location.href = "/login"
-          }
+          // Force logout on 401 Unauthorized
+          this.forceLogout()
         }
         return Promise.reject(error)
       },
     )
   }
 
+  // Force logout and redirect to login
+  private forceLogout() {
+    if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+      // Clear auth token
+      deleteCookie("auth-token")
+
+      // Redirect to login page
+      window.location.href = "/login"
+    }
+  }
+
   // Auth methods
   async login(email: string, password: string): Promise<LoginResponse> {
-    const response = await this.client.post<LoginResponse>("/auth/login", {
-      email,
-      password,
-    })
-    return response.data
+    try {
+      const response = await this.client.post<LoginResponse>("/auth/login", {
+        email,
+        password,
+      })
+      return response.data
+    } catch (error) {
+      throw error
+    }
   }
 
   async signup(data: SignupData): Promise<LoginResponse> {
-    const response = await this.client.post<LoginResponse>("/auth/signup", data)
-    return response.data
+    try {
+      const response = await this.client.post<LoginResponse>("/auth/signup", data)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+
+  // Check if user is authenticated
+  isAuthenticated(): boolean {
+    return !!getCookie("auth-token")
   }
 
   // Customer methods

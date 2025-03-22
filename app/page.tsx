@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Plus } from "lucide-react"
 import CustomerList from "@/components/customer-list"
 import AddCustomerForm from "@/components/add-customer-form"
@@ -17,29 +17,35 @@ export default function Dashboard() {
   const [syncLoading, setSyncLoading] = useState(false)
   const { logout } = useAuth()
 
-  // Fetch customers on component mount
-  useEffect(() => {
-    fetchCustomers()
-  }, [])
-
   // Function to fetch all customers
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     try {
       setLoading(true)
       const data = await apiClient.getCustomers()
       setCustomers(data)
       setError(null)
-    } catch (err) {
-      setError("Failed to fetch customers")
-      toast({
-        title: "Error",
-        description: "Failed to fetch customers. Please try again.",
-        variant: "destructive",
-      })
+    } catch (err: any) {
+      // Don't set error if it's a 401 (handled by API client)
+      if (err.response?.status !== 401) {
+        setError("Failed to fetch customers")
+        toast({
+          title: "Error",
+          description: "Failed to fetch customers. Please try again.",
+          variant: "destructive",
+        })
+      }
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  // Fetch customers on component mount
+  useEffect(() => {
+    // Only fetch if we're authenticated
+    if (apiClient.isAuthenticated()) {
+      fetchCustomers()
+    }
+  }, [fetchCustomers])
 
   // Function to add a new customer
   const addCustomer = async (customerData: Omit<Customer, "id">) => {
@@ -51,12 +57,15 @@ export default function Dashboard() {
         title: "Success",
         description: "Customer added successfully!",
       })
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "Failed to add customer. Please try again.",
-        variant: "destructive",
-      })
+    } catch (err: any) {
+      // Don't show toast if it's a 401 (handled by API client)
+      if (err.response?.status !== 401) {
+        toast({
+          title: "Error",
+          description: "Failed to add customer. Please try again.",
+          variant: "destructive",
+        })
+      }
     }
   }
 
@@ -69,12 +78,15 @@ export default function Dashboard() {
         title: "Success",
         description: "Customers synced to external API successfully!",
       })
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "Failed to sync customers. Please try again.",
-        variant: "destructive",
-      })
+    } catch (err: any) {
+      // Don't show toast if it's a 401 (handled by API client)
+      if (err.response?.status !== 401) {
+        toast({
+          title: "Error",
+          description: "Failed to sync customers. Please try again.",
+          variant: "destructive",
+        })
+      }
     } finally {
       setSyncLoading(false)
     }
