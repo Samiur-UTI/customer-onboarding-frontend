@@ -21,6 +21,15 @@ const nextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
   },
+  async rewrites() {
+    const backendApiUrl = process.env.BACKEND_API_URL; 
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${backendApiUrl}/:path*`,
+      },
+    ];
+  },
 }
 
 mergeConfig(nextConfig, userConfig)

@@ -2,7 +2,7 @@ import axios, { type AxiosInstance, type AxiosError } from "axios"
 import { getCookie, deleteCookie } from "cookies-next"
 
 // API base URL
-const API_URL = "http://34.174.59.17:5000"
+const API_URL = "/api"
 
 export interface Customer {
   id: string | number
