@@ -25,9 +25,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Check for token on client side
-    const authToken = getCookie("auth-token") as string | undefined
-    setToken(authToken || null)
-    setIsAuthenticated(!!authToken)
+    const checkAuth = () => {
+      const authToken = getCookie("auth-token") as string | undefined
+      setToken(authToken || null)
+      setIsAuthenticated(!!authToken)
+    }
+
+    // Initial check
+    checkAuth()
+
+    // Set up event listener for storage changes (for multi-tab support)
+    const handleStorageChange = () => {
+      checkAuth()
+    }
+
+    window.addEventListener("storage", handleStorageChange)
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange)
+    }
   }, [])
 
   const logout = () => {

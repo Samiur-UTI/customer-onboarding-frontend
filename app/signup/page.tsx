@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
+import { Loader2 } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import apiClient from "@/lib/api-client"
 
 // Define form schema
@@ -32,6 +34,7 @@ type FormValues = z.infer<typeof formSchema>
 
 export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
   const form = useForm<FormValues>({
@@ -46,29 +49,41 @@ export default function SignupPage() {
 
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true)
+    setError(null)
+
     try {
       const { confirmPassword, ...signupData } = data
       const response = await apiClient.signup(signupData)
 
       // Store token in cookie (secure in production)
-      setCookie("auth-token", response.token, {
+      setCookie("auth-token", response.access_token, {
         maxAge: 60 * 60 * 24 * 7, // 1 week
         path: "/",
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
       })
 
+      // Trigger storage event for multi-tab support
+      window.dispatchEvent(new Event("storage"))
+
       toast({
         title: "Account created successfully",
-        description: `Welcome, ${response.user.name}!`,
+        description: `Welcome!`,
       })
 
       // Redirect to dashboard
       router.push("/")
-    } catch (error) {
+    } catch (error: any) {
+      // Extract error message from API response if available
+      console.log(error)
+      const errorMessage =
+        error.response?.data?.message.message || error.response?.data?.error || "Failed to create account. Please try again."
+
+      setError(errorMessage)
+
       toast({
         title: "Signup failed",
-        description: "This email may already be registered or the service is unavailable.",
+        description: errorMessage,
         variant: "destructive",
       })
     } finally {
@@ -86,6 +101,12 @@ export default function SignupPage() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent className="space-y-4">
+              {error && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
               <FormField
                 control={form.control}
                 name="name"
@@ -93,7 +114,7 @@ export default function SignupPage() {
                   <FormItem>
                     <FormLabel>Full Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="John Doe" {...field} />
+                      <Input placeholder="John Doe" {...field} disabled={isLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -106,7 +127,7 @@ export default function SignupPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="john@example.com" {...field} />
+                      <Input placeholder="john@example.com" {...field} disabled={isLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -119,7 +140,7 @@ export default function SignupPage() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <Input type="password" placeholder="••••••••" {...field} disabled={isLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -132,7 +153,7 @@ export default function SignupPage() {
                   <FormItem>
                     <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <Input type="password" placeholder="••••••••" {...field} disabled={isLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -141,7 +162,14 @@ export default function SignupPage() {
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating account..." : "Sign Up"}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  "Sign Up"
+                )}
               </Button>
               <div className="text-center text-sm">
                 Already have an account?{" "}

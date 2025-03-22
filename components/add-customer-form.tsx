@@ -1,32 +1,48 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { z } from "zod"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import type { Customer } from "@/lib/api-client"
+import { useState } from "react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import type { Customer } from "@/lib/api-client";
 
 // Define form schema
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
   email: z.string().email({ message: "Please enter a valid email address" }),
   phone: z.string().optional(),
-  company: z.string().optional(),
-})
+  address: z.string().optional(),
+});
 
-type FormValues = z.infer<typeof formSchema>
+type FormValues = z.infer<typeof formSchema>;
 
 interface AddCustomerFormProps {
-  onSubmit: (data: Omit<Customer, "id">) => void
-  onCancel: () => void
+  onSubmit: (data: Omit<Customer, "id">) => void;
+  onCancel: () => void;
 }
 
-export default function AddCustomerForm({ onSubmit, onCancel }: AddCustomerFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false)
+export default function AddCustomerForm({
+  onSubmit,
+  onCancel,
+}: AddCustomerFormProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -34,19 +50,19 @@ export default function AddCustomerForm({ onSubmit, onCancel }: AddCustomerFormP
       name: "",
       email: "",
       phone: "",
-      company: "",
+      address: "",
     },
-  })
+  });
 
   const handleSubmit = async (data: FormValues) => {
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
-      await onSubmit(data)
-      form.reset()
+      await onSubmit(data);
+      form.reset();
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <Card>
@@ -77,7 +93,11 @@ export default function AddCustomerForm({ onSubmit, onCancel }: AddCustomerFormP
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="john@example.com" {...field} />
+                    <Input
+                      type="email"
+                      placeholder="john@example.com"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -100,10 +120,10 @@ export default function AddCustomerForm({ onSubmit, onCancel }: AddCustomerFormP
 
             <FormField
               control={form.control}
-              name="company"
+              name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Company (optional)</FormLabel>
+                  <FormLabel>Address (optional)</FormLabel>
                   <FormControl>
                     <Input placeholder="Acme Inc." {...field} />
                   </FormControl>
@@ -124,6 +144,5 @@ export default function AddCustomerForm({ onSubmit, onCancel }: AddCustomerFormP
         </form>
       </Form>
     </Card>
-  )
+  );
 }
-
